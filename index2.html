@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Segmavoice — Bel Systeem</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --dark:#0f172a;
+  --dark2:#1e293b;
+  --blue:#3b82f6;
+  --blue2:#2563eb;
+  --green:#10b981;
+  --green2:#ecfdf5;
+  --red:#ef4444;
+  --red2:#fef2f2;
+  --yellow:#f59e0b;
+  --yellow2:#fffbeb;
+  --purple:#8b5cf6;
+  --gray:#64748b;
+  --border:#e2e8f0;
+  --light:#f8fafc;
+  --white:#ffffff;
+}
+body{font-family:'Inter',sans-serif;background:var(--light);color:var(--dark);min-height:100vh}
+
+/* LOGIN */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--dark);padding:24px}
+.login-card{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:48px 40px;width:100%;max-width:400px;text-align:center}
+.login-logo{font-size:28px;font-weight:700;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.login-logo span{color:var(--blue)}
+.login-sub{font-size:14px;color:rgba(255,255,255,.4);margin-bottom:40px}
+.login-label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:10px;text-align:left}
+.login-btn{width:100%;padding:14px;border-radius:8px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:12px;transition:all .2s}
+.btn-caller{background:var(--blue);color:#fff}
+.btn-caller:hover{background:var(--blue2)}
+.btn-boss{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.1)}
+.btn-boss:hover{background:rgba(255,255,255,.1)}
+.pin-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px 16px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;outline:none;text-align:center;letter-spacing:.2em;margin-bottom:12px}
+.pin-input:focus{border-color:var(--blue)}
+.pin-error{font-size:12px;color:var(--red);margin-bottom:12px;display:none}
+#pin-section{display:none}
+
+/* APP */
+#app{display:none;min-height:100vh}
+.topbar{background:var(--dark);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-logo{font-size:16px;font-weight:700;color:#fff}
+.topbar-logo span{color:var(--blue)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.mode-badge{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:.06em}
+.mode-caller{background:rgba(59,130,246,.2);color:#93c5fd}
+.mode-boss{background:rgba(139,92,246,.2);color:#c4b5fd}
+.logout-btn{font-size:12px;color:rgba(255,255,255,.4);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif}
+.logout-btn:hover{color:#fff}
+
+/* TABS */
+.tabs{background:#fff;border-bottom:2px solid var(--border);display:flex;overflow-x:auto;padding:0 20px}
+.tab{padding:14px 18px;font-size:13px;font-weight:500;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+
+/* PAGE */
+.page{display:none;padding:20px;max-width:900px;margin:0 auto}
+.page.active{display:block}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-head h2{font-size:15px;font-weight:600}
+.card-head p{font-size:12px;color:var(--gray);margin-top:2px}
+.card-body{padding:20px}
+
+/* SCRIPT */
+.step-box{border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
+.step-head{background:var(--light);padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.step-num{width:26px;height:26px;background:var(--blue);color:#fff;border-radius:50%;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-title{font-size:14px;font-weight:600;flex:1}
+.step-arrow{font-size:12px;color:var(--gray);transition:transform .2s}
+.step-body{display:none;padding:16px;border-top:1px solid var(--border)}
+.step-box.open .step-body{display:block}
+.step-box.open .step-arrow{transform:rotate(180deg)}
+.script-text{background:#eff6ff;border-left:3px solid var(--blue);padding:14px 16px;border-radius:0 6px 6px 0;font-size:14px;line-height:1.8;color:#1e3a5f;font-style:italic;margin-bottom:10px}
+.tip{background:#fffbeb;border-left:3px solid var(--yellow);padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.6;color:#78350f}
+
+/* LOG CALL FORM */
+.log-form{display:grid;gap:14px}
+.field label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gray);display:block;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;background:#fff}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue)}
+.field textarea{height:80px;resize:none}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.submit-btn{background:var(--blue);color:#fff;border:none;padding:14px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;width:100%;transition:background .2s}
+.submit-btn:hover{background:var(--blue2)}
+.submit-btn:active{transform:scale(.99)}
+
+/* STATUS BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-interested{background:var(--green2);color:#065f46}
+.badge-callback{background:var(--yellow2);color:#92400e}
+.badge-no{background:var(--red2);color:#991b1b}
+.badge-voicemail{background:#f1f5f9;color:#475569}
+
+/* CALLS LIST */
+.call-item{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.call-item:last-child{border-bottom:none}
+.call-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.call-info{flex:1;min-width:0}
+.call-name{font-size:14px;font-weight:600;margin-bottom:3px}
+.call-meta{font-size:12px;color:var(--gray);display:flex;gap:12px;flex-wrap:wrap}
+.call-note{font-size:12px;color:var(--gray);margin-top:4px;font-style:italic}
+.call-time{font-size:11px;color:var(--gray);white-space:nowrap}
+.empty-state{text-align:center;padding:40px 20px;color:var(--gray)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+
+/* DASHBOARD STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px}
+.stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.stat-icon{font-size:20px}
+.stat-num{font-size:36px;font-weight:700;line-height:1}
+.stat-lbl{font-size:12px;color:var(--gray);margin-top:4px}
+.stat-change{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.stat-blue .stat-num{color:var(--blue)}
+.stat-green .stat-num{color:var(--green)}
+.stat-yellow .stat-num{color:var(--yellow)}
+.stat-red .stat-num{color:var(--red)}
+
+/* PROGRESS BAR */
+.progress-wrap{margin-top:8px}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--gray);margin-bottom:4px}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s}
+
+/* WHATSAPP BUTTON */
+.wa-btn{background:#25d366;color:#fff;border:none;padding:14px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;transition:background .2s}
+.wa-btn:hover{background:#1da851}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+
+@media(max-width:480px){
+  .form-row{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .page{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Segma<span>voice</span></div>
+    <div class="login-sub">Restaurant Bel Systeem</div>
+    <div class="login-label">Kies je rol</div>
+    <button class="login-btn btn-caller" onclick="loginCaller()">📞 Ik ben de Beller</button>
+    <button class="login-btn btn-boss" onclick="showPinSection()">👑 Boss Dashboard</button>
+    <div id="pin-section">
+      <input class="pin-input" id="pin-input" type="password" placeholder="PIN" maxlength="4">
+      <div class="pin-error" id="pin-error">❌ Verkeerde PIN. Probeer opnieuw.</div>
+      <button class="login-btn btn-boss" onclick="loginBoss()">Inloggen als Boss</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">Segma<span>voice</span></div>
+    <div class="topbar-right">
+      <div class="mode-badge" id="mode-badge"></div>
+      <button class="logout-btn" onclick="logout()">Uitloggen</button>
+    </div>
+  </div>
+
+  <!-- CALLER TABS -->
+  <div class="tabs" id="caller-tabs">
+    <div class="tab active" onclick="showPage('script','caller-tabs')">📋 Script</div>
+    <div class="tab" onclick="showPage('log','caller-tabs')">➕ Gesprek Loggen</div>
+    <div class="tab" onclick="showPage('mijn-calls','caller-tabs')">📞 Mijn Calls</div>
+    <div class="tab" onclick="showPage('bezwaren','caller-tabs')">🛡️ Bezwaren</div>
+  </div>
+
+  <!-- BOSS TABS -->
+  <div class="tabs" id="boss-tabs" style="display:none">
+    <div class="tab active" onclick="showPage('dashboard','boss-tabs')">📊 Dashboard</div>
+    <div class="tab" onclick="showPage('alle-calls','boss-tabs')">📋 Alle Calls</div>
+    <div class="tab" onclick="showPage('whatsapp-boss','boss-tabs')">💬 WhatsApp</div>
+  </div>
+
+  <!-- ── SCRIPT PAGE ── -->
+  <div class="page active" id="page-script">
+    <div class="card">
+      <div class="card-head"><div><h2>📋 Bel Script</h2><p>Volg deze stappen bij elk gesprek</p></div></div>
+      <div class="card-body">
+
+        <div class="step-box open">
+          <div class="step-head" onclick="toggleStep(this)">
+            <div class="step-num">1</div>
+            <div class="step-title">Opening — Eerste 10 seconden</div>
+            <div class="step-arrow">▼</div>
+          </div>
+          <div class="step-body">
+            <div class="script-text">"Goedemiddag, u spreekt met [Naam] van Segmavoice. Ik bel u omdat ik uw restaurant heb gezien en een vraag heb — heb u nu 2 minuutjes?"</div>
+            <div class="tip">💡 Bel tussen 14:00–17:00. Altijd om toestemming vragen — mensen die ja zeggen luisteren ook echt.</div>
+          </div>
+        </div>
+
+        <div class="step-box">
+          <div class="step-head" onclick="toggleStep(this)">
+            <div class="step-num">2</div>
+            <div class="step-title">Het probleem benoemen</div>
+            <div class="step-arrow">▼</div>
+          </div>
+          <div class="step-body">
+            <div class="script-text">"Veel restaurants hebben een website die niet goed werkt op telefoon, of waarbij je niet makkelijk een tafel kunt reserveren. Klopt dat ook een beetje bij u?"</div>
+            <div class="tip">💡 Wacht op hun antwoord. Als ze nee zeggen: "Hoeveel reserveringen krijgt u via uw website per week?"</div>
+          </div>
+        </div>
+
+        <div class="step-box">
+          <div class="step-head" onclick="toggleStep(this)">
+            <div class="step-num">3</div>
+            <div class="step-title">Het aanbod</div>
+            <div class="step-arrow">▼</div>
+          </div>
+          <div class="step-body">
+            <div class="script-text">"Wij bouwen professionele websites voor restaurants — met online reserveringen, mooie foto's van uw gerechten, en goed vindbaar op Google. Ik heb al een voorbeeld gemaakt speciaal voor uw restaurant."</div>
+            <div class="tip">💡 Zeg altijd "speciaal voor uw restaurant" — klinkt persoonlijk en wekt nieuwsgierigheid.</div>
+          </div>
+        </div>
+
+        <div class="step-box">
+          <div class="step-head" onclick="toggleStep(this)">
+            <div class="step-num">4</div>
+            <div class="step-title">Demo sturen</div>
+            <div class="step-arrow">▼</div>
+          </div>
+          <div class="step-body">
+            <div class="script-text">"Mag ik u de link sturen via WhatsApp? Het is gratis te bekijken, geen verplichting. Dan kunt u zelf zien hoe het eruit ziet."</div>
+            <div class="tip">💡 Stuur de demo link binnen 5 minuten na het gesprek!</div>
+          </div>
+        </div>
+
+        <div class="step-box">
+          <div class="step-head" onclick="toggleStep(this)">
+            <div class="step-num">5</div>
+            <div class="step-title">Afspraak vastleggen</div>
+            <div class="step-arrow">▼</div>
+          </div>
+          <div class="step-body">
+            <div class="script-text">"Dan stuur ik u nu de link. Ik bel u [dag] om [tijd] terug — werkt dat voor u?"</div>
+            <div class="tip">💡 Altijd een specifieke dag + tijd noemen. Nooit "ik bel binnenkort terug".</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LOG CALL PAGE ── -->
+  <div class="page" id="page-log">
+    <div class="card">
+      <div class="card-head"><div><h2>➕ Gesprek Loggen</h2><p>Vul dit in na elk gesprek</p></div></div>
+      <div class="card-body">
+        <div class="log-form">
+          <div class="form-row">
+            <div class="field">
+              <label>Restaurant naam</label>
+              <input id="f-name" type="text" placeholder="bijv. Restaurant De Linde">
+            </div>
+            <div class="field">
+              <label>Stad</label>
+              <input id="f-city" type="text" placeholder="bijv. Amsterdam">
+            </div>
+          </div>
+          <div class="field">
+            <label>Naam contactpersoon</label>
+            <input id="f-contact" type="text" placeholder="bijv. Jan Jansen">
+          </div>
+          <div class="field">
+            <label>Telefoonnummer</label>
+            <input id="f-phone" type="tel" placeholder="+31 6 00 000 000">
+          </div>
+          <div class="field">
+            <label>Resultaat</label>
+            <select id="f-status">
+              <option value="">— Kies resultaat —</option>
+              <option value="interested">✅ Geïnteresseerd — demo gestuurd</option>
+              <option value="callback">🔄 Terugbellen</option>
+              <option value="no">❌ Geen interesse</option>
+              <option value="voicemail">📱 Voicemail ingesproken</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Terugbellen op</label>
+            <input id="f-callback" type="text" placeholder="bijv. Donderdag 15:00">
+          </div>
+          <div class="field">
+            <label>Notitie</label>
+            <textarea id="f-note" placeholder="Wat zeiden ze? Bijzonderheden..."></textarea>
+          </div>
+          <button class="submit-btn" onclick="logCall()">✅ Gesprek opslaan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MIJN CALLS PAGE ── -->
+  <div class="page" id="page-mijn-calls">
+    <div class="card">
+      <div class="card-head"><div><h2>📞 Mijn Calls</h2><p>Jouw gelogde gesprekken</p></div></div>
+      <div class="card-body" id="mijn-calls-list">
+        <div class="empty-state"><div class="empty-icon">📭</div><p>Nog geen calls gelogd.<br>Log je eerste gesprek!</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BEZWAREN PAGE ── -->
+  <div class="page" id="page-bezwaren">
+    <div class="card">
+      <div class="card-head"><div><h2>🛡️ Bezwaren Handleiding</h2><p>Antwoord op elke "nee"</p></div></div>
+      <div class="card-body" style="padding:0">
+        <div id="bezwaren-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD PAGE ── -->
+  <div class="page" id="page-dashboard">
+    <div class="stats-grid" id="boss-stats"></div>
+    <div class="card">
+      <div class="card-head"><div><h2>📈 Conversie overzicht</h2><p>Vandaag vs totaal</p></div></div>
+      <div class="card-body" id="conversion-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><h2>🔥 Laatste activiteit</h2></div></div>
+      <div class="card-body" id="recent-activity"></div>
+    </div>
+  </div>
+
+  <!-- ── ALLE CALLS PAGE ── -->
+  <div class="page" id="page-alle-calls">
+    <div class="card">
+      <div class="card-head">
+        <div><h2>📋 Alle Gesprekken</h2><p id="total-label">0 gesprekken totaal</p></div>
+        <div style="display:flex;gap:8px">
+          <select id="filter-status" onchange="renderAllCalls()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:'Inter',sans-serif;outline:none">
+            <option value="">Alle statussen</option>
+            <option value="interested">✅ Geïnteresseerd</option>
+            <option value="callback">🔄 Terugbellen</option>
+            <option value="no">❌ Geen interesse</option>
+            <option value="voicemail">📱 Voicemail</option>
+          </select>
+          <button onclick="clearAllCalls()" style="font-size:12px;padding:6px 12px;background:var(--red2);color:var(--red);border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif">🗑️ Wis alles</button>
+        </div>
+      </div>
+      <div class="card-body" id="alle-calls-list"></div>
+    </div>
+  </div>
+
+  <!-- ── WHATSAPP BOSS PAGE ── -->
+  <div class="page" id="page-whatsapp-boss">
+    <div class="card">
+      <div class="card-head"><div><h2>💬 WhatsApp Rapport</h2><p>Genereer automatisch op basis van de calls</p></div></div>
+      <div class="card-body">
+        <div class="field" style="margin-bottom:16px">
+          <label>Selecteer periode</label>
+          <select id="wa-period" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-size:14px;font-family:'Inter',sans-serif;outline:none">
+            <option value="today">Vandaag</option>
+            <option value="all">Alle tijd</option>
+          </select>
+        </div>
+        <div id="wa-preview" style="background:#e7fce8;border-radius:12px;padding:16px;font-size:13px;line-height:1.9;white-space:pre-line;color:#1a1a1a;margin-bottom:12px;min-height:120px"></div>
+        <button class="wa-btn" onclick="copyWA()">📋 Kopieer voor WhatsApp</button>
+        <button class="submit-btn" style="background:var(--light);color:var(--dark);border:1px solid var(--border);margin-top:8px" onclick="generateWA()">🔄 Rapport vernieuwen</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── DATA ──
+const BOSS_PIN = '1234';
+let currentRole = null;
+let calls = JSON.parse(localStorage.getItem('sgv_calls') || '[]');
+
+const BEZWAREN = [
+  {q:'😤 "Ik heb al een website."', a:'"Dat begrijp ik! Maar werkt die goed op mobiel, en kunnen gasten er direct reserveren? Mag ik u de demo sturen? Geheel vrijblijvend."'},
+  {q:'💸 "Dat is te duur."', a:'"Hoeveel extra tafels per maand zou het waard zijn? Onze websites kosten eenmalig [bedrag]. Eén extra reservering per week en het verdient zichzelf terug."'},
+  {q:'🤷 "Ik heb geen tijd."', a:'"Precies daarom bel ik — wij regelen alles voor u. U hoeft niets te doen. Mag ik u alleen even de link sturen? Bekijken duurt 30 seconden."'},
+  {q:'🤔 "Ik moet erover nadenken."', a:'"Natuurlijk! Waarover twijfelt u het meest — de prijs, de tijd, of iets anders? Dan kan ik u daar direct meer over vertellen."'},
+  {q:'😒 "We werken al met iemand."', a:'"Top! Bent u tevreden met de resultaten? Mag ik u de demo sturen — puur ter vergelijking? Geheel vrijblijvend."'},
+  {q:'📵 "Stuur maar een e-mail."', a:'"Dat doe ik! Dan heb ik uw e-mailadres nodig. En wanneer is een goed moment om even terug te bellen als u het heeft bekeken?"'},
+  {q:'🚫 "Geen interesse."', a:'"Geen probleem! Mag ik vragen waarom niet? En als het ooit verandert, kunt u me altijd bellen. Fijne dag nog!"'},
+];
+
+// ── AUTH ──
+function loginCaller(){
+  currentRole='caller';
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('mode-badge').textContent='📞 Beller';
+  document.getElementById('mode-badge').className='mode-badge mode-caller';
+  document.getElementById('caller-tabs').style.display='flex';
+  document.getElementById('boss-tabs').style.display='none';
+  renderBezwaren();
+  renderMijnCalls();
+}
+
+function showPinSection(){
+  document.getElementById('pin-section').style.display='block';
+  document.getElementById('pin-input').focus();
+}
+
+function loginBoss(){
+  const pin = document.getElementById('pin-input').value;
+  if(pin !== BOSS_PIN){
+    document.getElementById('pin-error').style.display='block';
+    return;
+  }
+  currentRole='boss';
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('mode-badge').textContent='👑 Boss';
+  document.getElementById('mode-badge').className='mode-badge mode-boss';
+  document.getElementById('caller-tabs').style.display='none';
+  document.getElementById('boss-tabs').style.display='flex';
+  showPage('dashboard','boss-tabs');
+  renderDashboard();
+}
+
+document.addEventListener('keydown',e=>{ if(e.key==='Enter' && document.getElementById('pin-input')===document.activeElement) loginBoss(); });
+
+function logout(){
+  currentRole=null;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-error').style.display='none';
+  document.getElementById('pin-section').style.display='none';
+}
+
+// ── TABS ──
+function showPage(id, tabsId){
+  const tabs = document.getElementById(tabsId);
+  tabs.querySelectorAll('.tab').forEach((t,i)=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(id==='mijn-calls') renderMijnCalls();
+  if(id==='dashboard') renderDashboard();
+  if(id==='alle-calls') renderAllCalls();
+  if(id==='whatsapp-boss') generateWA();
+}
+
+// ── LOG CALL ──
+function logCall(){
+  const name = document.getElementById('f-name').value.trim();
+  const status = document.getElementById('f-status').value;
+  if(!name){ showToast('❌ Vul de restaurantnaam in'); return; }
+  if(!status){ showToast('❌ Kies een resultaat'); return; }
+  const call = {
+    id: Date.now(),
+    name,
+    city: document.getElementById('f-city').value.trim(),
+    contact: document.getElementById('f-contact').value.trim(),
+    phone: document.getElementById('f-phone').value.trim(),
+    status,
+    callback: document.getElementById('f-callback').value.trim(),
+    note: document.getElementById('f-note').value.trim(),
+    time: new Date().toLocaleString('nl-NL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+  };
+  calls.unshift(call);
+  localStorage.setItem('sgv_calls', JSON.stringify(calls));
+  ['f-name','f-city','f-contact','f-phone','f-callback','f-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-status').value='';
+  showToast('✅ Gesprek opgeslagen!');
+  renderMijnCalls();
+}
+
+// ── RENDERS ──
+function statusBadge(s){
+  const map={interested:'badge-interested',callback:'badge-callback',no:'badge-no',voicemail:'badge-voicemail'};
+  const label={interested:'✅ Geïnteresseerd',callback:'🔄 Terugbellen',no:'❌ Geen interesse',voicemail:'📱 Voicemail'};
+  return `<span class="badge ${map[s]||''}">${label[s]||s}</span>`;
+}
+
+function callHTML(c){
+  const icons={interested:'🟢',callback:'🟡',no:'🔴',voicemail:'⚪'};
+  const bg={interested:'#ecfdf5',callback:'#fffbeb',no:'#fef2f2',voicemail:'#f8fafc'};
+  return `<div class="call-item">
+    <div class="call-icon" style="background:${bg[c.status]||'#f8fafc'}">${icons[c.status]||'📞'}</div>
+    <div class="call-info">
+      <div class="call-name">${c.name}${c.city?' <span style="font-weight:400;color:var(--gray)">· '+c.city+'</span>':''}</div>
+      <div class="call-meta">
+        ${statusBadge(c.status)}
+        ${c.contact?'<span>👤 '+c.contact+'</span>':''}
+        ${c.phone?'<span>📱 '+c.phone+'</span>':''}
+        ${c.callback?'<span>📅 '+c.callback+'</span>':''}
+      </div>
+      ${c.note?'<div class="call-note">💬 '+c.note+'</div>':''}
+    </div>
+    <div class="call-time">${c.time}</div>
+  </div>`;
+}
+
+function renderMijnCalls(){
+  const el = document.getElementById('mijn-calls-list');
+  if(!calls.length){ el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>Nog geen calls gelogd.</p></div>'; return; }
+  el.innerHTML = calls.map(callHTML).join('');
+}
+
+function renderAllCalls(){
+  calls = JSON.parse(localStorage.getItem('sgv_calls')||'[]');
+  const filter = document.getElementById('filter-status').value;
+  const filtered = filter ? calls.filter(c=>c.status===filter) : calls;
+  document.getElementById('total-label').textContent = calls.length+' gesprekken totaal';
+  const el = document.getElementById('alle-calls-list');
+  if(!filtered.length){ el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>Geen gesprekken gevonden.</p></div>'; return; }
+  el.innerHTML = filtered.map(callHTML).join('');
+}
+
+function clearAllCalls(){
+  if(!confirm('Weet je zeker dat je alle calls wilt verwijderen?')) return;
+  calls=[];
+  localStorage.setItem('sgv_calls','[]');
+  renderAllCalls();
+  renderDashboard();
+  showToast('🗑️ Alle calls verwijderd');
+}
+
+function renderDashboard(){
+  calls = JSON.parse(localStorage.getItem('sgv_calls')||'[]');
+  const total=calls.length;
+  const interested=calls.filter(c=>c.status==='interested').length;
+  const callbacks=calls.filter(c=>c.status==='callback').length;
+  const no=calls.filter(c=>c.status==='no').length;
+  const convRate = total ? Math.round(interested/total*100) : 0;
+
+  document.getElementById('boss-stats').innerHTML=`
+    <div class="stat-card stat-blue"><div class="stat-top"><span class="stat-icon">📞</span></div><div class="stat-num">${total}</div><div class="stat-lbl">Totaal gebeld</div></div>
+    <div class="stat-card stat-green"><div class="stat-top"><span class="stat-icon">✅</span></div><div class="stat-num">${interested}</div><div class="stat-lbl">Geïnteresseerd</div></div>
+    <div class="stat-card stat-yellow"><div class="stat-top"><span class="stat-icon">🔄</span></div><div class="stat-num">${callbacks}</div><div class="stat-lbl">Terugbellen</div></div>
+    <div class="stat-card stat-red"><div class="stat-top"><span class="stat-icon">📈</span></div><div class="stat-num">${convRate}%</div><div class="stat-lbl">Conversie</div></div>
+  `;
+
+  document.getElementById('conversion-bars').innerHTML=`
+    <div class="progress-wrap"><div class="progress-label"><span>✅ Geïnteresseerd</span><span>${interested}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${total?interested/total*100:0}%;background:var(--green)"></div></div></div>
+    <div class="progress-wrap" style="margin-top:12px"><div class="progress-label"><span>🔄 Terugbellen</span><span>${callbacks}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${total?callbacks/total*100:0}%;background:var(--yellow)"></div></div></div>
+    <div class="progress-wrap" style="margin-top:12px"><div class="progress-label"><span>❌ Geen interesse</span><span>${no}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${total?no/total*100:0}%;background:var(--red)"></div></div></div>
+  `;
+
+  const recent = calls.slice(0,5);
+  document.getElementById('recent-activity').innerHTML = recent.length ? recent.map(callHTML).join('') : '<div class="empty-state"><div class="empty-icon">📭</div><p>Nog geen activiteit.</p></div>';
+}
+
+function renderBezwaren(){
+  document.getElementById('bezwaren-list').innerHTML = BEZWAREN.map(b=>`
+    <div style="margin:12px 16px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="background:#fef2f2;padding:12px 14px;font-size:13px;font-weight:600;color:#991b1b">${b.q}</div>
+      <div style="padding:12px 14px;font-size:13px;color:#065f46;line-height:1.7;font-style:italic;background:var(--green2)">${b.a}</div>
+    </div>
+  `).join('');
+}
+
+function generateWA(){
+  calls = JSON.parse(localStorage.getItem('sgv_calls')||'[]');
+  const period = document.getElementById('wa-period').value;
+  let filtered = calls;
+  if(period==='today'){
+    const today = new Date().toLocaleDateString('nl-NL');
+    filtered = calls.filter(c=>c.time.startsWith(today.split('-').reverse().join('/')));
+  }
+  const total=filtered.length;
+  const interested=filtered.filter(c=>c.status==='interested').length;
+  const callbacks=filtered.filter(c=>c.status==='callback').length;
+  const no=filtered.filter(c=>c.status==='no').length;
+  const voicemail=filtered.filter(c=>c.status==='voicemail').length;
+  const cbList=filtered.filter(c=>c.status==='callback').map(c=>`• ${c.name}${c.callback?' om '+c.callback:''}`).join('\n');
+
+  const text=`📊 RAPPORT — ${new Date().toLocaleDateString('nl-NL')}
+━━━━━━━━━━━━━━━
+📞 Totaal gebeld: ${total}
+✅ Geïnteresseerd: ${interested}
+🔄 Terugbellen: ${callbacks}
+❌ Geen interesse: ${no}
+📱 Voicemail: ${voicemail}
+📈 Conversie: ${total?Math.round(interested/total*100):0}%
+━━━━━━━━━━━━━━━${cbList?'\n📅 Terugbellen:\n'+cbList:''}`;
+
+  document.getElementById('wa-preview').textContent = text;
+}
+
+function copyWA(){
+  const text = document.getElementById('wa-preview').textContent;
+  navigator.clipboard.writeText(text).then(()=>showToast('✅ Gekopieerd voor WhatsApp!'));
+}
+
+function toggleStep(el){
+  el.closest('.step-box').classList.toggle('open');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// Auto-refresh boss dashboard every 30 seconds
+setInterval(()=>{ if(currentRole==='boss'){ renderDashboard(); }}, 30000);
+</script>
+</body>
+</html>
