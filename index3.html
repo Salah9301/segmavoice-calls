@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Segmavoice — Calling System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --dark:#0f172a;--dark2:#1e293b;--blue:#3b82f6;--blue2:#2563eb;
+  --green:#10b981;--green2:#ecfdf5;--red:#ef4444;--red2:#fef2f2;
+  --yellow:#f59e0b;--yellow2:#fffbeb;--gray:#64748b;
+  --border:#e2e8f0;--light:#f8fafc;--white:#fff;
+}
+body{font-family:'Inter',sans-serif;background:var(--light);color:var(--dark);min-height:100vh}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--dark);padding:24px;flex-direction:column;gap:16px}
+.login-card{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:48px 40px;width:100%;max-width:400px;text-align:center}
+.login-logo{font-size:28px;font-weight:700;color:#fff;margin-bottom:6px}
+.login-logo span{color:var(--blue)}
+.login-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:36px}
+.login-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:10px;text-align:left}
+.login-btn{width:100%;padding:14px;border-radius:8px;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:10px;transition:all .2s}
+.btn-caller{background:var(--blue);color:#fff}
+.btn-caller:hover{background:var(--blue2)}
+.btn-boss{background:rgba(255,255,255,.07);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.1)}
+.btn-boss:hover{background:rgba(255,255,255,.12)}
+.pin-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px;color:#fff;font-size:18px;font-family:'Inter',sans-serif;outline:none;text-align:center;letter-spacing:.3em;margin-bottom:10px}
+.pin-input:focus{border-color:var(--blue)}
+.pin-error{font-size:12px;color:var(--red);margin-bottom:10px;display:none}
+#pin-section{display:none;margin-top:8px}
+/* LANG TOGGLE */
+.lang-toggle{display:flex;gap:6px}
+.lang-btn{padding:7px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.2);font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:rgba(255,255,255,.5);font-family:'Inter',sans-serif;transition:all .2s}
+.lang-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+/* APP */
+#app{display:none;min-height:100vh}
+.topbar{background:var(--dark);padding:0 16px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:8px}
+.topbar-logo{font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
+.topbar-logo span{color:var(--blue)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.mode-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.mode-caller{background:rgba(59,130,246,.2);color:#93c5fd}
+.mode-boss{background:rgba(139,92,246,.2);color:#c4b5fd}
+.logout-btn{font-size:12px;color:rgba(255,255,255,.4);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;white-space:nowrap}
+.logout-btn:hover{color:#fff}
+.lang-toggle-app{display:flex;gap:4px}
+.lang-btn-app{padding:4px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.2);font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:rgba(255,255,255,.5);font-family:'Inter',sans-serif;transition:all .2s}
+.lang-btn-app.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tabs{background:#fff;border-bottom:2px solid var(--border);display:flex;overflow-x:auto;padding:0 16px}
+.tab{padding:13px 16px;font-size:13px;font-weight:500;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.page{display:none;padding:16px;max-width:860px;margin:0 auto}
+.page.active{display:block}
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-head h2{font-size:14px;font-weight:600}
+.card-head p{font-size:12px;color:var(--gray);margin-top:1px}
+.card-body{padding:18px}
+.step-box{border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.step-head{background:var(--light);padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.step-num{width:24px;height:24px;background:var(--blue);color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-title{font-size:13px;font-weight:600;flex:1}
+.step-arrow{font-size:11px;color:var(--gray);transition:transform .2s}
+.step-body{display:none;padding:14px;border-top:1px solid var(--border)}
+.step-box.open .step-body{display:block}
+.step-box.open .step-arrow{transform:rotate(180deg)}
+.script-text{background:#eff6ff;border-left:3px solid var(--blue);padding:12px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.8;color:#1e3a5f;font-style:italic;margin-bottom:8px}
+.tip{background:#fffbeb;border-left:3px solid var(--yellow);padding:10px 12px;border-radius:0 6px 6px 0;font-size:12px;line-height:1.6;color:#78350f}
+.field{margin-bottom:14px}
+.field label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gray);display:block;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;background:#fff}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue)}
+.field textarea{height:72px;resize:none}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.submit-btn{background:var(--blue);color:#fff;border:none;padding:13px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;width:100%;transition:background .2s}
+.submit-btn:hover{background:var(--blue2)}
+.submit-btn:disabled{background:#93c5fd;cursor:not-allowed}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-interested{background:var(--green2);color:#065f46}
+.badge-callback{background:var(--yellow2);color:#92400e}
+.badge-no{background:var(--red2);color:#991b1b}
+.badge-voicemail{background:#f1f5f9;color:#475569}
+.call-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.call-item:last-child{border-bottom:none}
+.call-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.call-info{flex:1;min-width:0}
+.call-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.call-meta{font-size:11px;color:var(--gray);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.call-note{font-size:12px;color:var(--gray);margin-top:3px;font-style:italic}
+.call-time{font-size:11px;color:var(--gray);white-space:nowrap;flex-shrink:0}
+.empty-state{text-align:center;padding:40px 20px;color:var(--gray)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px}
+.stat-num{font-size:32px;font-weight:700;line-height:1}
+.stat-lbl{font-size:11px;color:var(--gray);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+.stat-blue .stat-num{color:var(--blue)}
+.stat-green .stat-num{color:var(--green)}
+.stat-yellow .stat-num{color:var(--yellow)}
+.stat-red .stat-num{color:var(--red)}
+.progress-wrap{margin-bottom:12px}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--gray);margin-bottom:4px}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s}
+.wa-msg{background:#e7fce8;border-radius:12px 12px 12px 0;padding:14px;font-size:13px;line-height:1.8;color:#1a1a1a;white-space:pre-line;margin-bottom:10px}
+.wa-btn{background:#25d366;color:#fff;border:none;padding:13px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;width:100%;margin-bottom:8px}
+.wa-btn:hover{background:#1da851}
+.live-dot{display:inline-block;width:8px;height:8px;background:var(--green);border-radius:50%;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.obj-card{border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.obj-q{background:#fef2f2;padding:12px 14px;font-size:13px;font-weight:600;color:#991b1b}
+.obj-a{padding:12px 14px;font-size:13px;color:#065f46;line-height:1.7;font-style:italic;background:var(--green2)}
+.filter-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.filter-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:500;cursor:pointer;background:#fff;font-family:'Inter',sans-serif;transition:all .2s}
+.filter-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+@media(max-width:480px){.form-row{grid-template-columns:1fr}.login-card{padding:32px 24px}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('nl',this)">🇳🇱 NL</button>
+    <button class="lang-btn" onclick="setLang('en',this)">🇬🇧 EN</button>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">Segma<span>voice</span></div>
+    <div class="login-sub" id="l-sub">Restaurant Bel Systeem — Live Team Tracker</div>
+    <div class="login-label" id="l-role">Kies je rol</div>
+    <button class="login-btn btn-caller" onclick="loginCaller()" id="l-caller-btn">📞 Ik ben de Beller</button>
+    <button class="login-btn btn-boss" onclick="showPin()" id="l-boss-btn">👑 Boss Dashboard</button>
+    <div id="pin-section">
+      <input class="pin-input" id="pin-input" type="password" placeholder="••••" maxlength="4" onkeydown="if(event.key==='Enter')loginBoss()">
+      <div class="pin-error" id="pin-error" >❌ Wrong PIN</div>
+      <button class="login-btn btn-boss" onclick="loginBoss()" id="l-login-btn">Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">Segma<span>voice</span></div>
+    <div class="topbar-right">
+      <div class="lang-toggle-app">
+        <button class="lang-btn-app active" onclick="setLang('nl',this,true)">NL</button>
+        <button class="lang-btn-app" onclick="setLang('en',this,true)">EN</button>
+      </div>
+      <div class="mode-badge" id="mode-badge"></div>
+      <button class="logout-btn" onclick="logout()" id="t-logout">Uitloggen</button>
+    </div>
+  </div>
+
+  <!-- CALLER TABS -->
+  <div class="tabs" id="caller-tabs">
+    <div class="tab active" onclick="showPage('script')" id="tab-script">📋 Script</div>
+    <div class="tab" onclick="showPage('log')" id="tab-log">➕ Log</div>
+    <div class="tab" onclick="showPage('mijn')" id="tab-mijn">📞 My Calls</div>
+    <div class="tab" onclick="showPage('bezwaren')" id="tab-bez">🛡️ Objections</div>
+  </div>
+
+  <!-- BOSS TABS -->
+  <div class="tabs" id="boss-tabs" style="display:none">
+    <div class="tab active" onclick="showPage('dashboard')" id="tab-dash">📊 Dashboard</div>
+    <div class="tab" onclick="showPage('alle')" id="tab-alle">📋 All Calls</div>
+    <div class="tab" onclick="showPage('rapport')" id="tab-rap">💬 Report</div>
+  </div>
+
+  <!-- SCRIPT -->
+  <div class="page active" id="page-script">
+    <div class="card">
+      <div class="card-head"><div><h2 id="s-title">📋 Call Script</h2><p id="s-sub">Follow these steps in every call</p></div></div>
+      <div class="card-body" id="script-steps"></div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="page" id="page-log">
+    <div class="card">
+      <div class="card-head"><div><h2 id="log-title">➕ Log a Call</h2><p id="log-sub">Fill in after every conversation</p></div></div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="field"><label id="f-lbl-name">Restaurant name *</label><input id="f-name" placeholder="e.g. Restaurant De Linde"></div>
+          <div class="field"><label id="f-lbl-city">City *</label><input id="f-city" placeholder="e.g. Amsterdam"></div>
+        </div>
+        <div class="field"><label id="f-lbl-contact">Contact person</label><input id="f-contact" placeholder="e.g. Jan Jansen"></div>
+        <div class="field"><label id="f-lbl-phone">Phone number</label><input id="f-phone" type="tel" placeholder="+31 6 00 000 000"></div>
+        <div class="field">
+          <label id="f-lbl-status">Result *</label>
+          <select id="f-status">
+            <option value="" id="f-opt0">— Choose result —</option>
+            <option value="interested" id="f-opt1">✅ Interested — demo sent</option>
+            <option value="callback" id="f-opt2">🔄 Call back</option>
+            <option value="no" id="f-opt3">❌ Not interested</option>
+            <option value="voicemail" id="f-opt4">📱 Voicemail</option>
+          </select>
+        </div>
+        <div class="field"><label id="f-lbl-cb">Call back on</label><input id="f-callback" placeholder="e.g. Thursday 15:00"></div>
+        <div class="field"><label id="f-lbl-note">Note</label><textarea id="f-note" placeholder="What did they say?..."></textarea></div>
+        <button class="submit-btn" id="save-btn" onclick="saveCall()">✅ Save & send to boss</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MIJN CALLS -->
+  <div class="page" id="page-mijn">
+    <div class="card">
+      <div class="card-head"><div><h2 id="mijn-title">📞 My Calls</h2><p id="mijn-count">Loading...</p></div></div>
+      <div class="card-body" id="mijn-list"><div class="empty-state"><div class="empty-icon">⏳</div><p>Loading...</p></div></div>
+    </div>
+  </div>
+
+  <!-- BEZWAREN -->
+  <div class="page" id="page-bezwaren">
+    <div class="card">
+      <div class="card-head"><div><h2 id="bez-title">🛡️ Objection Handler</h2></div></div>
+      <div class="card-body" style="padding:12px" id="bez-list"></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page" id="page-dashboard">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;font-size:12px;color:var(--gray)">
+      <span class="live-dot"></span><span id="live-txt">Live updates — refreshes every 30 seconds</span>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card stat-blue"><div class="stat-num" id="s-total">—</div><div class="stat-lbl" id="s-lbl-total">Total called</div></div>
+      <div class="stat-card stat-green"><div class="stat-num" id="s-int">—</div><div class="stat-lbl" id="s-lbl-int">Interested</div></div>
+      <div class="stat-card stat-yellow"><div class="stat-num" id="s-cb">—</div><div class="stat-lbl" id="s-lbl-cb">Call back</div></div>
+      <div class="stat-card stat-red"><div class="stat-num" id="s-conv">—</div><div class="stat-lbl" id="s-lbl-conv">Conversion %</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><h2 id="conv-title">📈 Conversion</h2></div></div>
+      <div class="card-body" id="conv-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><h2 id="recent-title">🔥 Latest activity</h2></div></div>
+      <div class="card-body" id="recent-list"><div class="empty-state"><div class="empty-icon">📭</div><p id="no-calls-txt">No calls yet.</p></div></div>
+    </div>
+  </div>
+
+  <!-- ALLE CALLS -->
+  <div class="page" id="page-alle">
+    <div class="filter-bar" id="filter-bar">
+      <button class="filter-btn active" onclick="filterCalls('',this)" id="f-all">All</button>
+      <button class="filter-btn" onclick="filterCalls('interested',this)" id="f-int">✅ Interested</button>
+      <button class="filter-btn" onclick="filterCalls('callback',this)" id="f-cb">🔄 Call back</button>
+      <button class="filter-btn" onclick="filterCalls('no',this)" id="f-no">❌ Not interested</button>
+      <button class="filter-btn" onclick="filterCalls('voicemail',this)" id="f-vm">📱 Voicemail</button>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div><h2 id="alle-title">📋 All Calls</h2><p id="alle-count">Loading...</p></div>
+        <button onclick="deleteAll()" id="del-btn" style="font-size:11px;padding:5px 10px;background:var(--red2);color:var(--red);border:1px solid #fca5a5;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif">🗑️ Delete all</button>
+      </div>
+      <div class="card-body" id="alle-list"></div>
+    </div>
+  </div>
+
+  <!-- RAPPORT -->
+  <div class="page" id="page-rapport">
+    <div class="card">
+      <div class="card-head"><div><h2 id="rap-title">💬 WhatsApp Report</h2><p id="rap-sub">Auto-generated</p></div></div>
+      <div class="card-body">
+        <div class="field">
+          <label id="rap-period-lbl">Period</label>
+          <select id="wa-period" onchange="generateWA()">
+            <option value="today" id="wa-today">Today</option>
+            <option value="all" id="wa-all">All time</option>
+          </select>
+        </div>
+        <div class="wa-msg" id="wa-preview">Loading...</div>
+        <button class="wa-btn" onclick="copyWA()" id="wa-copy-btn">📋 Copy for WhatsApp</button>
+        <button class="submit-btn" style="background:var(--light);color:var(--dark);border:1px solid var(--border)" onclick="generateWA()" id="wa-refresh-btn">🔄 Refresh</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://deerfpmiidvmitreqxya.supabase.co';
+const SUPABASE_KEY='sb_publishable_OZB64xGmb-TaB306h6T_Xg_YrGtntl0';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const BOSS_PIN='1234';
+let role=null,allCalls=[],currentFilter='',lang='nl';
+
+// ── TRANSLATIONS ──
+const T={
+  nl:{
+    sub:'Restaurant Bel Systeem — Live Team Tracker',
+    roleLabel:'Kies je rol',
+    callerBtn:'📞 Ik ben de Beller',
+    bossBtn:'👑 Boss Dashboard',
+    loginBtn:'Inloggen',
+    logout:'Uitloggen',
+    callerBadge:'📞 Beller',
+    bossBadge:'👑 Boss',
+    tabScript:'📋 Script',tabLog:'➕ Log',tabMijn:'📞 Mijn calls',tabBez:'🛡️ Bezwaren',
+    tabDash:'📊 Dashboard',tabAlle:'📋 Alle calls',tabRap:'💬 Rapport',
+    scriptTitle:'📋 Bel Script',scriptSub:'Volg deze stappen bij elk gesprek',
+    logTitle:'➕ Gesprek loggen',logSub:'Vul in na elk gesprek',
+    fName:'Restaurant naam *',fCity:'Stad *',fContact:'Contactpersoon',fPhone:'Telefoonnummer',
+    fStatus:'Resultaat *',fOpt0:'— Kies resultaat —',fOpt1:'✅ Geïnteresseerd — demo gestuurd',
+    fOpt2:'🔄 Terugbellen',fOpt3:'❌ Geen interesse',fOpt4:'📱 Voicemail',
+    fCb:'Terugbellen op',fNote:'Notitie',saveBtn:'✅ Opslaan & stuur naar boss',
+    mijnTitle:'📞 Mijn calls',
+    bezTitle:'🛡️ Bezwaren handleiding',
+    liveTxt:'Live updates — elke 30 seconden',
+    sTotal:'Totaal gebeld',sInt:'Geïnteresseerd',sCb:'Terugbellen',sConv:'Conversie %',
+    convTitle:'📈 Conversie',recentTitle:'🔥 Laatste activiteit',noCalls:'Nog geen calls.',
+    alleTitle:'📋 Alle gesprekken',delBtn:'🗑️ Wis alles',
+    fAll:'Alle',fInt:'✅ Geïnteresseerd',fCbF:'🔄 Terugbellen',fNo:'❌ Geen interesse',fVm:'📱 Voicemail',
+    rapTitle:'💬 WhatsApp Rapport',rapSub:'Automatisch gegenereerd',
+    rapPeriod:'Periode',waToday:'Vandaag',waAll:'Alle tijd',
+    waCopy:'📋 Kopieer voor WhatsApp',waRefresh:'🔄 Vernieuwen',
+    saved:'✅ Opgeslagen! Boss kan het nu zien.',
+    errName:'❌ Vul de restaurantnaam in',errStatus:'❌ Kies een resultaat',
+    copied:'✅ Gekopieerd!',deleted:'🗑️ Alle calls verwijderd',
+    confirmDelete:'Weet je zeker dat je ALLE calls wilt verwijderen?',
+    calls:'gesprekken',total:'totaal',visible:'zichtbaar',loading:'Laden...',
+    noCallsFound:'Geen gesprekken gevonden.',
+    steps:[
+      {title:'Opening — Eerste 10 seconden',
+       script:'"Goedemiddag, u spreekt met [Naam] van Segmavoice. Ik bel u omdat ik uw restaurant heb gezien en een vraag heb — heb u nu 2 minuutjes?"',
+       tip:'💡 Bel tussen 14:00–17:00. Wacht altijd op hun antwoord.'},
+      {title:'Het probleem benoemen',
+       script:'"Veel restaurants hebben een website die niet goed werkt op telefoon, of waarbij je niet makkelijk een tafel kunt reserveren. Klopt dat ook een beetje bij u?"',
+       tip:'💡 Laat ze praten. Als ze nee zeggen: "Hoeveel reserveringen krijgt u via uw website per week?"'},
+      {title:'Het aanbod',
+       script:'"Wij bouwen professionele websites voor restaurants — met online reserveringen, mooie foto\'s en goed vindbaar op Google. Ik heb al een voorbeeld gemaakt speciaal voor uw restaurant."',
+       tip:'💡 Zeg altijd "speciaal voor uw restaurant" — wekt nieuwsgierigheid.'},
+      {title:'Demo sturen',
+       script:'"Mag ik u de link sturen via WhatsApp? Gratis te bekijken, geen verplichting."',
+       tip:'💡 Stuur de demo binnen 5 minuten na het gesprek!'},
+      {title:'Afspraak vastleggen',
+       script:'"Dan stuur ik u nu de link. Ik bel u [dag] om [tijd] terug — werkt dat?"',
+       tip:'💡 Altijd specifieke dag + tijd. Nooit "ik bel binnenkort".'}
+    ],
+    objections:[
+      {q:'😤 "Ik heb al een website."',a:'"Dat begrijp ik! Maar werkt die goed op mobiel en kunnen gasten er direct reserveren? Mag ik u de demo sturen? Geen verplichting."'},
+      {q:'💸 "Dat is te duur."',a:'"Hoeveel extra tafels per maand zou het waard zijn? Eenmalige investering — één extra reservering per week en het verdient zichzelf terug."'},
+      {q:'🤷 "Ik heb geen tijd."',a:'"Precies daarom bel ik — wij regelen alles. U hoeft niets te doen. Mag ik u alleen de link sturen? Bekijken duurt 30 seconden."'},
+      {q:'🤔 "Ik moet erover nadenken."',a:'"Natuurlijk! Waarover twijfelt u het meest — de prijs, de tijd, of iets anders?"'},
+      {q:'😒 "We werken al met iemand."',a:'"Bent u tevreden met de resultaten? Mag ik de demo sturen — puur ter vergelijking? Geheel vrijblijvend."'},
+      {q:'🚫 "Geen interesse."',a:'"Geen probleem! Mag ik vragen waarom niet? Fijne dag nog!"'}
+    ],
+    rapportTxt:(d,t,i,cb,no,vm,conv,cbList)=>
+`📊 RAPPORT — ${d}\n━━━━━━━━━━━━━━━\n📞 Totaal gebeld: ${t}\n✅ Geïnteresseerd: ${i}\n🔄 Terugbellen: ${cb}\n❌ Geen interesse: ${no}\n📱 Voicemail: ${vm}\n📈 Conversie: ${conv}%\n━━━━━━━━━━━━━━━${cbList?'\n📅 Terugbellen:\n'+cbList:''}`
+  },
+  en:{
+    sub:'Restaurant Calling System — Live Team Tracker',
+    roleLabel:'Choose your role',
+    callerBtn:'📞 I am the Caller',
+    bossBtn:'👑 Boss Dashboard',
+    loginBtn:'Login',
+    logout:'Logout',
+    callerBadge:'📞 Caller',
+    bossBadge:'👑 Boss',
+    tabScript:'📋 Script',tabLog:'➕ Log',tabMijn:'📞 My Calls',tabBez:'🛡️ Objections',
+    tabDash:'📊 Dashboard',tabAlle:'📋 All Calls',tabRap:'💬 Report',
+    scriptTitle:'📋 Call Script',scriptSub:'Follow these steps in every call',
+    logTitle:'➕ Log a Call',logSub:'Fill in after every conversation',
+    fName:'Restaurant name *',fCity:'City *',fContact:'Contact person',fPhone:'Phone number',
+    fStatus:'Result *',fOpt0:'— Choose result —',fOpt1:'✅ Interested — demo sent',
+    fOpt2:'🔄 Call back',fOpt3:'❌ Not interested',fOpt4:'📱 Voicemail',
+    fCb:'Call back on',fNote:'Note',saveBtn:'✅ Save & send to boss',
+    mijnTitle:'📞 My Calls',
+    bezTitle:'🛡️ Objection Handler',
+    liveTxt:'Live updates — refreshes every 30 seconds',
+    sTotal:'Total called',sInt:'Interested',sCb:'Call back',sConv:'Conversion %',
+    convTitle:'📈 Conversion',recentTitle:'🔥 Latest activity',noCalls:'No calls yet.',
+    alleTitle:'📋 All Calls',delBtn:'🗑️ Delete all',
+    fAll:'All',fInt:'✅ Interested',fCbF:'🔄 Call back',fNo:'❌ Not interested',fVm:'📱 Voicemail',
+    rapTitle:'💬 WhatsApp Report',rapSub:'Auto-generated',
+    rapPeriod:'Period',waToday:'Today',waAll:'All time',
+    waCopy:'📋 Copy for WhatsApp',waRefresh:'🔄 Refresh',
+    saved:'✅ Saved! Boss can see it now.',
+    errName:'❌ Please fill in the restaurant name',errStatus:'❌ Please choose a result',
+    copied:'✅ Copied!',deleted:'🗑️ All calls deleted',
+    confirmDelete:'Are you sure you want to delete ALL calls?',
+    calls:'calls',total:'total',visible:'visible',loading:'Loading...',
+    noCallsFound:'No calls found.',
+    steps:[
+      {title:'Opening — First 10 seconds',
+       script:'"Good afternoon, you\'re speaking with [Name] from Segmavoice. I\'m calling because I came across your restaurant and have a question — do you have 2 minutes?"',
+       tip:'💡 Call between 2pm–5pm. Always wait for their answer after the question.'},
+      {title:'Identify the problem',
+       script:'"Many restaurants have a website that doesn\'t work well on mobile, or where it\'s hard to make a reservation. Does that sound familiar to you?"',
+       tip:'💡 Let them talk. If they say no: "How many reservations do you get through your website per week?"'},
+      {title:'The offer',
+       script:'"We build professional websites for restaurants — with online reservations, beautiful food photos and great Google visibility. I\'ve already built a demo specifically for your restaurant."',
+       tip:'💡 Always say "specifically for your restaurant" — creates curiosity.'},
+      {title:'Send the demo',
+       script:'"May I send you the link via WhatsApp? Free to view, no obligation."',
+       tip:'💡 Send the demo within 5 minutes after the call!'},
+      {title:'Lock in the next step',
+       script:'"Great, I\'ll send you the link now. I\'ll call you back [day] at [time] — does that work?"',
+       tip:'💡 Always give a specific day and time. Never say "I\'ll call soon".'}
+    ],
+    objections:[
+      {q:'😤 "I already have a website."',a:'"I understand! But does it work well on mobile and can guests book directly? May I send you the demo? No obligation at all."'},
+      {q:'💸 "That\'s too expensive."',a:'"How many extra tables per month would it be worth? It\'s a one-time investment — one extra booking per week and it pays for itself."'},
+      {q:'🤷 "I don\'t have time."',a:'"That\'s exactly why I\'m calling — we handle everything for you. May I just send you the link? Viewing takes 30 seconds."'},
+      {q:'🤔 "I need to think about it."',a:'"Of course! What are you most unsure about — the price, the time, or something else?"'},
+      {q:'😒 "We already work with someone."',a:'"Are you happy with the results? May I send the demo — just for comparison? Completely no obligation."'},
+      {q:'🚫 "Not interested."',a:'"No problem! May I ask why? Have a great day!"'}
+    ],
+    rapportTxt:(d,t,i,cb,no,vm,conv,cbList)=>
+`📊 REPORT — ${d}\n━━━━━━━━━━━━━━━\n📞 Total called: ${t}\n✅ Interested: ${i}\n🔄 Call back: ${cb}\n❌ Not interested: ${no}\n📱 Voicemail: ${vm}\n📈 Conversion: ${conv}%\n━━━━━━━━━━━━━━━${cbList?'\n📅 Call back:\n'+cbList:''}`
+  }
+};
+
+// ── SET LANGUAGE ──
+function setLang(l, btn, inApp){
+  lang=l;
+  // Update toggle buttons
+  document.querySelectorAll(inApp?'.lang-btn-app':'.lang-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyTranslations();
+}
+
+function applyTranslations(){
+  const t=T[lang];
+  // Login
+  const ls=document.getElementById('l-sub'); if(ls) ls.textContent=t.sub;
+  const lr=document.getElementById('l-role'); if(lr) lr.textContent=t.roleLabel;
+  const lc=document.getElementById('l-caller-btn'); if(lc) lc.textContent=t.callerBtn;
+  const lb=document.getElementById('l-boss-btn'); if(lb) lb.textContent=t.bossBtn;
+  const ll=document.getElementById('l-login-btn'); if(ll) ll.textContent=t.loginBtn;
+  // Topbar
+  const lo=document.getElementById('t-logout'); if(lo) lo.textContent=t.logout;
+  // Tabs
+  ['script','log','mijn','bez'].forEach((id,i)=>{
+    const el=document.getElementById('tab-'+['script','log','mijn','bez'][i]);
+    if(el) el.textContent=[t.tabScript,t.tabLog,t.tabMijn,t.tabBez][i];
+  });
+  ['dash','alle','rap'].forEach((id,i)=>{
+    const el=document.getElementById('tab-'+id);
+    if(el) el.textContent=[t.tabDash,t.tabAlle,t.tabRap][i];
+  });
+  // Script
+  const st=document.getElementById('s-title'); if(st) st.textContent=t.scriptTitle;
+  const ss=document.getElementById('s-sub'); if(ss) ss.textContent=t.scriptSub;
+  renderScript();
+  // Log form
+  const ids=['log-title','log-sub','f-lbl-name','f-lbl-city','f-lbl-contact','f-lbl-phone','f-lbl-status','f-lbl-cb','f-lbl-note','save-btn'];
+  const vals=[t.logTitle,t.logSub,t.fName,t.fCity,t.fContact,t.fPhone,t.fStatus,t.fCb,t.fNote,t.saveBtn];
+  ids.forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=vals[i];});
+  ['f-opt0','f-opt1','f-opt2','f-opt3','f-opt4'].forEach((id,i)=>{
+    const el=document.getElementById(id);if(el)el.textContent=[t.fOpt0,t.fOpt1,t.fOpt2,t.fOpt3,t.fOpt4][i];
+  });
+  // Mijn
+  const mt=document.getElementById('mijn-title'); if(mt) mt.textContent=t.mijnTitle;
+  // Bezwaren
+  const bt=document.getElementById('bez-title'); if(bt) bt.textContent=t.bezTitle;
+  renderBez();
+  // Dashboard
+  const lt=document.getElementById('live-txt'); if(lt) lt.textContent=t.liveTxt;
+  ['s-lbl-total','s-lbl-int','s-lbl-cb','s-lbl-conv'].forEach((id,i)=>{
+    const el=document.getElementById(id);if(el)el.textContent=[t.sTotal,t.sInt,t.sCb,t.sConv][i];
+  });
+  const ct=document.getElementById('conv-title'); if(ct) ct.textContent=t.convTitle;
+  const rt=document.getElementById('recent-title'); if(rt) rt.textContent=t.recentTitle;
+  // All calls
+  const at=document.getElementById('alle-title'); if(at) at.textContent=t.alleTitle;
+  const db=document.getElementById('del-btn'); if(db) db.textContent=t.delBtn;
+  ['f-all','f-int','f-cb','f-no','f-vm'].forEach((id,i)=>{
+    const el=document.getElementById(id);if(el)el.textContent=[t.fAll,t.fInt,t.fCbF,t.fNo,t.fVm][i];
+  });
+  // Report
+  ['rap-title','rap-sub','rap-period-lbl','wa-copy-btn','wa-refresh-btn'].forEach((id,i)=>{
+    const el=document.getElementById(id);if(el)el.textContent=[t.rapTitle,t.rapSub,t.rapPeriod,t.waCopy,t.waRefresh][i];
+  });
+  const wd=document.getElementById('wa-today'); if(wd) wd.textContent=t.waToday;
+  const wa=document.getElementById('wa-all'); if(wa) wa.textContent=t.waAll;
+  // Mode badge
+  if(role){
+    document.getElementById('mode-badge').textContent=role==='caller'?t.callerBadge:t.bossBadge;
+  }
+}
+
+function renderScript(){
+  const t=T[lang];
+  document.getElementById('script-steps').innerHTML=t.steps.map((s,i)=>`
+    <div class="step-box${i===0?' open':''}">
+      <div class="step-head" onclick="this.closest('.step-box').classList.toggle('open')">
+        <div class="step-num">${i+1}</div><div class="step-title">${s.title}</div><div class="step-arrow">▼</div>
+      </div>
+      <div class="step-body">
+        <div class="script-text">${s.script}</div>
+        <div class="tip">${s.tip}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderBez(){
+  const t=T[lang];
+  document.getElementById('bez-list').innerHTML=t.objections.map(o=>`
+    <div class="obj-card"><div class="obj-q">${o.q}</div><div class="obj-a">${o.a}</div></div>`).join('');
+}
+
+// ── AUTH ──
+function loginCaller(){
+  role='caller';
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const t=T[lang];
+  document.getElementById('mode-badge').textContent=t.callerBadge;
+  document.getElementById('mode-badge').className='mode-badge mode-caller';
+  document.getElementById('caller-tabs').style.display='flex';
+  document.getElementById('boss-tabs').style.display='none';
+  applyTranslations();
+  loadMijnCalls();
+}
+
+function showPin(){
+  document.getElementById('pin-section').style.display='block';
+  document.getElementById('pin-input').focus();
+}
+
+function loginBoss(){
+  if(document.getElementById('pin-input').value!==BOSS_PIN){
+    document.getElementById('pin-error').style.display='block';return;
+  }
+  role='boss';
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const t=T[lang];
+  document.getElementById('mode-badge').textContent=t.bossBadge;
+  document.getElementById('mode-badge').className='mode-badge mode-boss';
+  document.getElementById('caller-tabs').style.display='none';
+  document.getElementById('boss-tabs').style.display='flex';
+  applyTranslations();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-dashboard').classList.add('active');
+  loadDashboard();
+  setInterval(loadDashboard,30000);
+}
+
+function logout(){
+  role=null;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-error').style.display='none';
+  document.getElementById('pin-section').style.display='none';
+}
+
+// ── TABS ──
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  if(id==='mijn')loadMijnCalls();
+  if(id==='dashboard')loadDashboard();
+  if(id==='alle')loadAllCalls();
+  if(id==='rapport')generateWA();
+}
+
+// ── SAVE ──
+async function saveCall(){
+  const t=T[lang];
+  const name=document.getElementById('f-name').value.trim();
+  const status=document.getElementById('f-status').value;
+  if(!name){showToast(t.errName);return;}
+  if(!status){showToast(t.errStatus);return;}
+  const btn=document.getElementById('save-btn');
+  btn.disabled=true;btn.textContent=t.loading;
+  const {error}=await sb.from('calls').insert({
+    restaurant:name,city:document.getElementById('f-city').value.trim(),
+    contact:document.getElementById('f-contact').value.trim(),
+    phone:document.getElementById('f-phone').value.trim(),
+    status,callback_time:document.getElementById('f-callback').value.trim(),
+    note:document.getElementById('f-note').value.trim()
+  });
+  btn.disabled=false;btn.textContent=t.saveBtn;
+  if(error){showToast('❌ Error: '+error.message);return;}
+  ['f-name','f-city','f-contact','f-phone','f-callback','f-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-status').value='';
+  showToast(t.saved);
+}
+
+// ── RENDERS ──
+function statusBadge(s){
+  const t=T[lang];
+  const map={interested:'badge-interested',callback:'badge-callback',no:'badge-no',voicemail:'badge-voicemail'};
+  const label={interested:t.fOpt1,callback:t.fOpt2,no:t.fOpt3,voicemail:t.fOpt4};
+  return`<span class="badge ${map[s]||''}">${label[s]||s}</span>`;
+}
+
+function callHTML(c){
+  const bg={interested:'#ecfdf5',callback:'#fffbeb',no:'#fef2f2',voicemail:'#f8fafc'};
+  const icon={interested:'✅',callback:'🔄',no:'❌',voicemail:'📱'};
+  const time=new Date(c.created_at).toLocaleString(lang==='nl'?'nl-NL':'en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  return`<div class="call-item">
+    <div class="call-icon" style="background:${bg[c.status]||'#f8fafc'}">${icon[c.status]||'📞'}</div>
+    <div class="call-info">
+      <div class="call-name">${c.restaurant||'—'}${c.city?' <span style="font-weight:400;color:var(--gray)">· '+c.city+'</span>':''}</div>
+      <div class="call-meta">${statusBadge(c.status)}${c.contact?'<span>👤 '+c.contact+'</span>':''}${c.callback_time?'<span>📅 '+c.callback_time+'</span>':''}</div>
+      ${c.note?'<div class="call-note">💬 '+c.note+'</div>':''}
+    </div>
+    <div class="call-time">${time}</div>
+  </div>`;
+}
+
+async function loadMijnCalls(){
+  const t=T[lang];
+  const {data}=await sb.from('calls').select('*').order('created_at',{ascending:false});
+  const el=document.getElementById('mijn-list');
+  const cnt=document.getElementById('mijn-count');
+  if(!data||!data.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">📭</div><p>${t.noCalls}</p></div>`;
+    if(cnt)cnt.textContent='0 '+t.calls;return;
+  }
+  if(cnt)cnt.textContent=data.length+' '+t.calls;
+  el.innerHTML=data.map(callHTML).join('');
+}
+
+async function loadDashboard(){
+  const t=T[lang];
+  const {data}=await sb.from('calls').select('*').order('created_at',{ascending:false});
+  allCalls=data||[];
+  const total=allCalls.length,interested=allCalls.filter(c=>c.status==='interested').length;
+  const callbacks=allCalls.filter(c=>c.status==='callback').length,no=allCalls.filter(c=>c.status==='no').length;
+  const conv=total?Math.round(interested/total*100):0;
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-int').textContent=interested;
+  document.getElementById('s-cb').textContent=callbacks;
+  document.getElementById('s-conv').textContent=conv+'%';
+  document.getElementById('conv-bars').innerHTML=`
+    <div class="progress-wrap"><div class="progress-label"><span>${t.fOpt1}</span><span>${interested}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${total?interested/total*100:0}%;background:var(--green)"></div></div></div>
+    <div class="progress-wrap"><div class="progress-label"><span>${t.fOpt2}</span><span>${callbacks}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${total?callbacks/total*100:0}%;background:var(--yellow)"></div></div></div>
+    <div class="progress-wrap"><div class="progress-label"><span>${t.fOpt3}</span><span>${no}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${total?no/total*100:0}%;background:var(--red)"></div></div></div>`;
+  const el=document.getElementById('recent-list');
+  el.innerHTML=allCalls.slice(0,8).length?allCalls.slice(0,8).map(callHTML).join(''):`<div class="empty-state"><div class="empty-icon">📭</div><p>${t.noCalls}</p></div>`;
+}
+
+async function loadAllCalls(){
+  const {data}=await sb.from('calls').select('*').order('created_at',{ascending:false});
+  allCalls=data||[];renderFiltered();
+}
+
+function renderFiltered(){
+  const t=T[lang];
+  const filtered=currentFilter?allCalls.filter(c=>c.status===currentFilter):allCalls;
+  document.getElementById('alle-count').textContent=allCalls.length+' '+t.total+' · '+filtered.length+' '+t.visible;
+  const el=document.getElementById('alle-list');
+  el.innerHTML=filtered.length?filtered.map(callHTML).join(''):`<div class="empty-state"><div class="empty-icon">📭</div><p>${t.noCallsFound}</p></div>`;
+}
+
+function filterCalls(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderFiltered();
+}
+
+async function deleteAll(){
+  const t=T[lang];
+  if(!confirm(t.confirmDelete))return;
+  await sb.from('calls').delete().neq('id',0);
+  allCalls=[];renderFiltered();showToast(t.deleted);
+}
+
+async function generateWA(){
+  const t=T[lang];
+  const {data}=await sb.from('calls').select('*').order('created_at',{ascending:false});
+  allCalls=data||[];
+  let filtered=allCalls;
+  const period=document.getElementById('wa-period')?.value;
+  if(period==='today'){
+    const today=new Date().toLocaleDateString();
+    filtered=allCalls.filter(c=>new Date(c.created_at).toLocaleDateString()===today);
+  }
+  const total=filtered.length,interested=filtered.filter(c=>c.status==='interested').length;
+  const cb=filtered.filter(c=>c.status==='callback').length,no=filtered.filter(c=>c.status==='no').length;
+  const vm=filtered.filter(c=>c.status==='voicemail').length;
+  const conv=total?Math.round(interested/total*100):0;
+  const cbList=filtered.filter(c=>c.status==='callback').map(c=>`• ${c.restaurant}${c.callback_time?' @ '+c.callback_time:''}`).join('\n');
+  const d=new Date().toLocaleDateString(lang==='nl'?'nl-NL':'en-GB');
+  document.getElementById('wa-preview').textContent=t.rapportTxt(d,total,interested,cb,no,vm,conv,cbList);
+}
+
+function copyWA(){
+  const t=T[lang];
+  navigator.clipboard.writeText(document.getElementById('wa-preview').textContent).then(()=>showToast(t.copied));
+}
+
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// Init
+renderScript();
+renderBez();
+applyTranslations();
+</script>
+</body>
+</html>
